@@ -1,0 +1,332 @@
+/*#############################################################################\
+ItemUnderMouse.xys
+
+Demonstrates how to identify the list item underneath the mouse cursor.
+
+Requires helper application.
+
+See also:
+  http://www.xyplorer.com/xyfc/viewtopic.php?f=3&t=12624
+
+[ABOUT]
+Author    = TheQwerty
+Version   = 1.0
+Date      = 2014-10-21 20:30z
+Requires  = XYplorer v14.50.0000 & ItemUnderMouse.exe
+
+[]
+\#############################################################################*/
+
+
+
+/*******************************************************************************
+** Identify Item under Mouse
+**   Echos the list item located under the mouse cursor.
+*******************************************************************************/
+"Identify Item under Mouse||1 : getItemAtMouse"
+	// Store the original focus and prevent intermediate pops.
+	Sub '_pushFocus';
+	Sub '_toggleFocusPopping';
+
+	// Ask helper where the mouse is.
+	Sub '_locateMouse';
+
+	// Check for errors from helper.
+	Global $G_ERROR;
+	End $G_ERROR != false, $G_ERROR, true;
+
+	// Ensure mouse is over this instance of XY.
+	Global $G_WINDOW;
+	End HexToDec($G_WINDOW) != <hwnd>, 'Mouse is not over this XYplorer.', true;
+
+	// Ensure mouse is over a list pane.
+	Global $G_CTRL;
+	End $G_CTRL UnLikeI 'P[12]', 'Mouse is not over a list pane.', true;
+
+	// Check for item under mouse.
+	Global $G_PANE = $G_CTRL;
+	Sub '_getItemAtCoord';
+
+	// Enable focus popping and restore the original focus.
+	Sub '_toggleFocusPopping';
+	Sub '_popAllFocus';
+
+	// Share the results of our spoilers.
+	Global $G_ITEM;
+	Echo $G_ITEM == '' ? 'No item found!' : $G_ITEM;
+/********************************************************* END getItemAtMouse */
+
+
+"- : _-" //---------------------------------------------------------------------
+
+
+/*******************************************************************************
+** Locate Mouse
+**   Gets information about the position of the mouse cursor.
+*******************************************************************************/
+"Locate Mouse||4 : _locateMouse"
+	// -------------------- PARAMETERS -------------------------------------------
+	// OUT: G_WINDOW
+	//  The HWND of the window under the mouse cursor in hex.
+	Global $G_WINDOW = '';
+
+	// OUT: G_CTRL
+	//  The control under the mouse cursor.
+	//  This defaults to the address bar because we need it in a known place
+	//  before calling the helper, which should focus the correct control.
+	//  Using 'A' sacrifices detecting when the mouse is over the address bar in
+	//  favor of improving reliability of detecting the list panes.
+	Global $G_CTRL = 'A';
+
+	// OUT: G_X, G_Y
+	//  The X and Y-coordinates of the mouse cursor relative to the screen.
+	Global $G_X = 0;
+	Global $G_Y = 0;
+
+	// OUT: G_ERROR
+	//  Any error message from the helper app.
+	//  FALSE if there were no errors.
+	Global $G_ERROR = false;
+	// -----------------END PARAMETERS -------------------------------------------
+
+		// Path to helper app.
+	$helperApp = Self('Path') . '\' . 'ItemUnderMouse.exe';
+
+	// Verify helper app can be found.
+	if (Exists($helperApp) != 1) {
+		$G_ERROR = <<<MSG
+Helper application not found at:
+$helperApp
+MSG;
+		End true,, true;
+	}
+
+	// Command to execute.
+	$cmd = <<<CMD
+"$helperApp" <hwnd>
+CMD;
+
+	// Save focus.
+	Sub '_pushFocus';
+
+	// We put the focus on the address bar because we want it in a known place.
+	// This helps detect when the helper is not able to set the focus, but it
+	// sacrifices reliably detecting when the mouse is over the address bar.
+	Focus 'A';
+
+	// Call helper and wait for it to finish.
+	// Don't show a message because mouse could end up over that.
+	Status 'Locating mouse cursor...',, 'progress';
+	Run $cmd, <xyscripts>, 2, 0;
+	$result = Get('CopiedData', 0);
+
+	// The helper should have focused the control under mouse.
+	$G_CTRL = Get('FocusedControl');
+	if ($G_CTRL == 'L') { $G_CTRL = 'P' . Get('Pane'); }
+
+	// Restore focus.
+	Sub '_popFocus';
+
+	// Result should be: hWndSender|dwData|err|window or msg|ctrl|x|y
+	// Using the token flag of get conflicts with separators in our data.
+	// So we define where our data should start...
+	$startPos = 3;
+
+	// Check error token.
+	$err = GetToken($result, $startPos++, '|');
+	$hwnd = GetToken($result, $startPos++, '|'); // HWND or Error message.
+	if ($err != 1) {
+		$G_ERROR = $hwnd;
+		if (! $G_ERROR) {
+			$G_ERROR = 'Unknown error';
+		}
+		End true,, true;
+	}
+	$G_WINDOW = $hwnd;
+
+	// Skip ctrl token.
+	$startPos++;
+
+	$G_X = GetToken($result, $startPos++, '|');
+	$G_Y = GetToken($result, $startPos++, '|');
+	Unset $startPos, $err, $hwnd;
+
+	Global $G_SHOW_INTERMEDIATE_RESULTS;
+	if ($G_SHOW_INTERMEDIATE_RESULTS == true) {
+		$hwnd = HexToDec($G_WINDOW);
+		Text <<<RESULTS
+Helper Path: $helperApp
+Run Command: $cmd
+     Result: $result
+
+XY Window: <hwnd>
+
+   Window: $hwnd ($G_WINDOW)
+  Control: $G_CTRL
+     X, Y: $G_X, $G_Y
+
+    Error: $G_ERROR
+RESULTS
+		, /*width*/, /*height*/, 'Results: ' . Self('Caption');
+		Unset $hwnd;
+	}
+	unset $helperApp, $cmd, $result;
+/*********************************************************** END _locateMouse */
+
+
+/*******************************************************************************
+** Find Item at Coordinates
+**   Retrieves the list item at the given coordinates.
+*******************************************************************************/
+"Find Item at Coordinates||4 : _getItemAtCoord"
+	// -------------------- PARAMETERS -------------------------------------------
+	// IN: G_X, G_Y
+	//  The X and Y-coordinates of the point relative to screen.
+	Global $G_X;
+	Global $G_Y;
+
+	// IN: G_PANE [OPTIONAL: Defaults to 'A' = Active Pane]
+	//  Pane to check for match.
+	Global $G_PANE;
+
+	// OUT: G_ITEM
+	//  The item found at X,Y coordinates or an empty string if none is found.
+	Global $G_ITEM = '';
+	// -----------------END PARAMETERS -------------------------------------------
+
+	// Parameter validation.
+	Assert $G_X != '', 'Global variable G_X cannot be empty.';
+	Assert RegexMatches($G_X, '^-?[0-9]+$') != '', 'Global variable $G_X must be an integer.';
+	
+	Assert $G_Y != '', 'Global variable G_Y cannot be empty.';
+	Assert RegexMatches($G_Y, '^-?[0-9]+$') != '', 'Global variable $G_Y must be an integer.';
+	
+	// Strip leading 'P'.
+	$pane = Trim(Recase($G_PANE, 'u'), 'P', 'L');
+	// Default to Active Pane.
+	if ($pane UnLikeI '[I12]') {
+		$pane = 'A';
+	}
+
+
+	// Save to restore.
+	Sub '_pushFocus';
+
+	// Cell only works on the active pane.
+	Focus ($pane == 'A') ? 'L' : 'P' . $pane;
+
+	$item = '';
+
+	// Unfortunately we now must check the coordinates of every list item.
+	// This could be smarter in how it iterates but that takes a smarter developer.
+	$lines = listpane('A', '*', 0, '|');
+	$count = GetToken($lines, 'Count', '|');
+
+	$i = 1;
+	while ($i <= $count) {
+		$row = $i++; // Allows us to flatten the following.
+
+		$left = Cell($row,, 'left', 1);
+		if ($G_X < $left) { continue; }
+
+		$right = Cell($row,, 'right', 1);
+		if ($G_X > $right) { continue; }
+
+
+		$top = Cell($row,, 'top', 1);
+		if ($G_Y < $top) { continue; }
+
+		$bottom = Cell($row,, 'bottom', 1);
+		if ($G_Y > $bottom) { continue; }
+
+		// Found our item.
+		$item = GetToken($lines, $row, '|');
+		break;
+	}
+	// Clean up loop.
+	Unset $lines, $count, $i, $row, $left, $right, $top, $bottom;
+
+	// Restore focus.
+	Sub '_popFocus';
+
+	// Set return value and clean up.
+	Global $G_ITEM = $item;
+	Unset $item;
+
+	Global $G_SHOW_INTERMEDIATE_RESULTS;
+	if ($G_SHOW_INTERMEDIATE_RESULTS == true) {
+		Text <<<RESULTS
+X, Y: $G_X, $G_Y
+Pane: $pane
+
+Item: '$G_ITEM'
+RESULTS
+		, /*width*/, /*height*/, 'Results: ' . Self('Caption');
+	}
+	Unset $pane;
+/******************************************************** END _getItemAtCoord */
+
+
+"- : _-" //---------------------------------------------------------------------
+
+
+/*******************************************************************************
+** Push Currently Focused Control onto Stack
+*******************************************************************************/
+"Push Currently Focused Control onto Stack||4 : _pushFocus"
+	Global $G_LAST_FOCUSED_CTRL;
+
+	if ($G_LAST_FOCUSED_CTRL != '') {
+		$G_LAST_FOCUSED_CTRL = $G_LAST_FOCUSED_CTRL . '|';
+	}
+
+	$focus = Get('FocusedControl');
+	if ($focus == 'L') { $focus = 'P' . Get('Pane'); }
+
+	$G_LAST_FOCUSED_CTRL = $G_LAST_FOCUSED_CTRL . $focus;
+/************************************************************* END _pushFocus */
+
+
+/*******************************************************************************
+** Toggle Blocking of Popping from Focused Control Stack
+*******************************************************************************/
+"Toggle Focus Popping||4 : _toggleFocusPopping"
+	Global $G_BLOCK_FOCUS_POPPING;
+	$G_BLOCK_FOCUS_POPPING = ! $G_BLOCK_FOCUS_POPPING;
+/**************************************************** END _toggleFocusPopping */
+
+
+/*******************************************************************************
+** Pop Most Recent Focused Control from Stack
+**   Unless Popping Blocking is enabled.
+*******************************************************************************/
+"Pop Last Focused Control from Stack||4 : _popFocus"
+	Global $G_LAST_FOCUSED_CTRL;
+	End $G_LAST_FOCUSED_CTRL == '',, true;
+
+	Global $G_BLOCK_FOCUS_POPPING;
+	End $G_BLOCK_FOCUS_POPPING,, true;
+
+	$focus = GetToken($G_LAST_FOCUSED_CTRL, -1, '|');
+	$G_LAST_FOCUSED_CTRL = GetToken($G_LAST_FOCUSED_CTRL, -2, '|',, 1);
+
+	Focus $focus;
+/************************************************************** END _popFocus */
+
+
+/*******************************************************************************
+** Pop First Focused Control & Clear Stack
+**   Unless Popping Blocking is enabled.
+*******************************************************************************/
+"Pop First Focused Control && Clear Stack||4 : _popAllFocus"
+	Global $G_LAST_FOCUSED_CTRL;
+	End $G_LAST_FOCUSED_CTRL == '',, true;
+
+	Global $G_BLOCK_FOCUS_POPPING;
+	End $G_BLOCK_FOCUS_POPPING,, true;
+
+	$focus = GetToken($G_LAST_FOCUSED_CTRL, 1, '|');
+	$G_LAST_FOCUSED_CTRL = '';
+
+	Focus $focus;
+/*********************************************************** END _popAllFocus */
