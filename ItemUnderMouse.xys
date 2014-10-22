@@ -11,7 +11,7 @@ See also:
 [ABOUT]
 Author    = TheQwerty
 Version   = 1.0
-Date      = 2014-10-21 20:30z
+Date      = 2014-10-22 19:30z
 Requires  = XYplorer v14.50.0000 & ItemUnderMouse.exe
 
 []
@@ -31,29 +31,35 @@ Requires  = XYplorer v14.50.0000 & ItemUnderMouse.exe
 	// Ask helper where the mouse is.
 	Sub '_locateMouse';
 
-	// Check for errors from helper.
-	Global $G_ERROR;
-	End $G_ERROR != false, $G_ERROR, true;
+	Global $G_ERROR, $G_WINDOW, $G_CTRL;
+	$windowDec = HexToDec($G_WINDOW);
 
-	// Ensure mouse is over this instance of XY.
-	Global $G_WINDOW;
-	End HexToDec($G_WINDOW) != <hwnd>, 'Mouse is not over this XYplorer.', true;
+	if ($G_ERROR != false) {
+		// There was an error from helper.
+		$result = $G_ERROR;
+	} elseif ($windowDec != <hwnd>) {
+		$result = "The mouse is not over this XYplorer (<hwnd>), but over window $G_WINDOW ($windowDec).";
+	} elseif ($G_CTRL UnLikeI 'P[12]') {
+		$result = "The mouse is not over a list pane.";
+	} else {
+		// Check for item under mouse.
+		Global $G_PANE = $G_CTRL;
+		Sub '_getItemAtCoord';
 
-	// Ensure mouse is over a list pane.
-	Global $G_CTRL;
-	End $G_CTRL UnLikeI 'P[12]', 'Mouse is not over a list pane.', true;
-
-	// Check for item under mouse.
-	Global $G_PANE = $G_CTRL;
-	Sub '_getItemAtCoord';
+		Global $G_ITEM;
+		if ($G_ITEM == '') {
+			$result = 'No item found!';
+		} else {
+			$result = $G_ITEM;
+		}
+	}
 
 	// Enable focus popping and restore the original focus.
 	Sub '_toggleFocusPopping';
 	Sub '_popAllFocus';
 
-	// Share the results of our spoilers.
-	Global $G_ITEM;
-	Echo $G_ITEM == '' ? 'No item found!' : $G_ITEM;
+	Text $result, /*width*/, /*height*/, 'Item Under Mouse';
+
 /********************************************************* END getItemAtMouse */
 
 
