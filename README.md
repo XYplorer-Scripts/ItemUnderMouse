@@ -12,7 +12,8 @@ As this script relies on a helper application, an undocumented scripting command
 ----------
 
 #### Usage
-1. Download
+1. [Download](https://github.com/XYplorer-Scripts/ItemUnderMouse/releases/latest)
+2. Extract.
 2. Run _ItemUnderMouse.xys_ in XYplorer.
 
 #### Requires
@@ -26,7 +27,7 @@ As this script relies on a helper application, an undocumented scripting command
 ----------
 
 #### Release Notes
-+ v 1.0 - October 22, 2014
++ [v 1.0 - October 22, 2014](https://github.com/XYplorer-Scripts/ItemUnderMouse/releases/tag/v1.0)
     - Initial Release
 
 ----------
