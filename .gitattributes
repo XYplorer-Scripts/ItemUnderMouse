@@ -1,5 +1,9 @@
+# Default behavior:
+# For text files do what Git thinks is best.
+# For other files do no EOL conversions.
 * text=auto !eol
 
+# For these extensions always use CRLF.
 *.xys text eol=crlf
 *.ahk text eol=crlf
 *.ini text eol=crlf
