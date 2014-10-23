@@ -1,6 +1,10 @@
 # Release archives #
 [Rr]eleases/
 
+# Build Settings #
+##################
+*.ahk.ini
+
 # Compiled source #
 ###################
 *.exe

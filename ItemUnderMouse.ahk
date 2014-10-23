@@ -1,31 +1,4 @@
 /*
- * * * Compile_AHK SETTINGS BEGIN * * *
-
-[AHK2EXE]
-Exe_File=%In_Dir%\ItemUnderMouse.exe
-Created_Date=1
-[VERSION]
-Set_Version_Info=1
-Company_Name=TheQwerty
-File_Description=Helper application for ItemUnderMouse XYplorer script.
-File_Version=1.0.0.0
-Inc_File_Version=1
-Product_Name=ItemUnderMouse
-Product_Version=1.1.16.5
-Set_AHK_Version=1
-[ICONS]
-Icon_1=%In_Dir%\res\icon.ico
-Icon_2=%In_Dir%\res\icon.ico
-Icon_3=%In_Dir%\res\icon.ico
-Icon_4=%In_Dir%\res\icon.ico
-Icon_5=%In_Dir%\res\icon.ico
-Icon_6=%In_Dir%\res\icon.ico
-Icon_7=%In_Dir%\res\icon.ico
-
-* * * Compile_AHK SETTINGS END * * *
-*/
-
-/*
 ================================================================================
 ItemUnderMouse.ahk
 
@@ -38,7 +11,6 @@ calling window.
 
 [ABOUT]
 Author    = TheQwerty
-Date      = 2014-10-22 18:00z
 Requires  = AHK_L v1.1.16.05
 
 []
